@@ -1,0 +1,73 @@
+﻿@page "/"
+@inject HttpClient httpClient;
+
+<h1 class="text-center">Pay an Game - Rock Paper Scissors</h1>
+
+<div class="form" style="max-width:500px; margin-right:auto; margin-left:auto;">
+
+    <label class="mt-5">Pick you move</label>
+    <select @onchange="SelectedMovesChanged" class="form-control form-select mb-2 mt-3">
+        <option value="@Move.Rock">@Move.Rock</option>
+        <option value="@Move.Paper">@Move.Paper</option>
+        <option value="@Move.Scissors">@Move.Scissors</option>
+    </select>
+
+    <button @onclick="GameLoop" class="form-control mt-3">Play</button>
+
+
+    @if (showWinner)
+    {
+        <div class="mt-5 alert alert-success text-center">
+            <h4>
+                The Winner: @win
+            </h4>
+        </div>
+    }
+
+</div>
+
+
+
+
+@code
+{
+
+    private bool showWinner = false;
+
+    private Payers payers = new Payers();
+
+    private Win win = new Win();
+
+    private void GameLoop()
+    {
+        GetAIMove();
+        WhoWinGame();
+        showWinner = true;
+
+    }
+
+    private async void WhoWinGame()
+    {
+        var response = await httpClient.PostAsJsonAsync("http://localhost:7155/api/GetTheWinner", payers);
+        win = await response.Content.ReadFromJsonAsync<Win>();
+    }
+
+    private async void GetAIMove()
+    {
+        payers.Bot.move = await httpClient.GetFromJsonAsync<Move>("http://localhost:7202/api/GetAIMove");
+    }
+
+    public Move SelectedMove { get; set; }
+
+
+    private void SelectedMovesChanged(ChangeEventArgs e)
+    {
+        if (e.Value is not null)
+        {
+            showWinner = false;
+
+            SelectedMove = (Move)Enum.Parse(typeof(Move), (string)e.Value);
+            payers.Human.move = SelectedMove;
+        }
+    }
+}
